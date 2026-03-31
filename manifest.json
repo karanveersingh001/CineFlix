@@ -1,0 +1,43 @@
+{
+    "name": "Cinflix",
+    "short_name": "Cinflix",
+    "description": "Your personal OTT streaming platform powered by Jellyfin",
+    "start_url": "/cinflix/?page=home",
+    "display": "standalone",
+    "background_color": "#03030a",
+    "theme_color": "#0a0a14",
+    "orientation": "any",
+    "categories": ["entertainment", "video"],
+    "icons": [
+        {
+            "src": "/cinflix/assets/images/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/cinflix/assets/images/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Home",
+            "url": "/cinflix/?page=home",
+            "description": "Go to Cinflix home"
+        },
+        {
+            "name": "Movies",
+            "url": "/cinflix/?page=movies",
+            "description": "Browse movies"
+        },
+        {
+            "name": "TV Shows",
+            "url": "/cinflix/?page=shows",
+            "description": "Browse TV shows"
+        }
+    ]
+}

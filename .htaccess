@@ -1,0 +1,58 @@
+# ============================================================
+# Cinflix — Hostinger / LiteSpeed compatible .htaccess
+# ============================================================
+
+Options -Indexes
+ServerSignature Off
+
+RewriteEngine On
+RewriteBase /cinflix/
+
+# ── 1. Let real files and directories pass through untouched ──
+# This is the critical fix: api/*.php, assets/*, etc. must NOT
+# be rewritten — they are real files that Apache/LiteSpeed should
+# serve directly.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ── 2. Route everything else to index.php ──
+RewriteRule ^(.*)$ index.php?page=$1 [QSA,L]
+
+# ── Security headers (LiteSpeed mod_headers compatible) ──
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2?)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# ── Protect .env only (NOT config.php — it needs to be included by PHP) ──
+<FilesMatch "^\.env$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── Gzip ──
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# ── PHP ini tweaks (works on Hostinger shared) ──
+<IfModule mod_php8.c>
+    php_flag  display_errors     Off
+    php_value post_max_size      64M
+    php_value upload_max_filesize 64M
+</IfModule>

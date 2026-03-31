@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cinflix Diagnostics</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#03030a;color:#e5e7eb;font-family:'Courier New',monospace;padding:2rem;min-height:100vh}
+h1{color:#ff2626;font-size:1.4rem;margin-bottom:.25rem}
+.sub{color:#6b7280;font-size:.8rem;margin-bottom:2rem}
+.card{background:#111120;border:1px solid rgba(255,255,255,.08);border-radius:1rem;padding:1.5rem;margin-bottom:1rem}
+.card h2{font-size:.9rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+.row{display:flex;align-items:flex-start;gap:1rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem}
+.row:last-child{border-bottom:none}
+.label{color:#6b7280;min-width:180px;flex-shrink:0}
+.val{color:#e5e7eb;word-break:break-all}
+.ok  {color:#34d399}
+.warn{color:#fbbf24}
+.err {color:#f87171}
+.info{color:#60a5fa}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:.4rem;font-size:.75rem;font-weight:600}
+.badge.ok  {background:rgba(52,211,153,.15);color:#34d399}
+.badge.warn{background:rgba(251,191,36,.15);color:#fbbf24}
+.badge.err {background:rgba(248,113,113,.15);color:#f87171}
+.badge.info{background:rgba(96,165,250,.15);color:#60a5fa}
+pre{background:#0a0a14;border:1px solid rgba(255,255,255,.06);border-radius:.5rem;padding:1rem;font-size:.75rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all;color:#a3e635;margin-top:.5rem;max-height:300px;overflow-y:auto}
+input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:.5rem;padding:.6rem .9rem;color:#f3f4f6;font-size:.9rem;font-family:inherit;outline:none;margin-bottom:.6rem}
+input:focus{border-color:#e80000}
+button{padding:.7rem 1.5rem;background:#e80000;color:#fff;border:none;border-radius:.6rem;font-size:.875rem;font-weight:600;cursor:pointer;transition:background .2s}
+button:hover{background:#ff2626}
+button:disabled{background:#4b0000;cursor:not-allowed}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.section-run{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+hr{border:none;border-top:1px solid rgba(255,255,255,.06);margin:1rem 0}
+</style>
+</head>
+<body>
+
+<h1>🔧 Cinflix — Server Diagnostics</h1>
+<p class="sub">Run these checks to find exactly what's breaking your login.</p>
+
+<!-- ===== CHECK 1: PHP Info ===== -->
+<div class="card">
+  <div class="section-run">
+    <h2>1. PHP Environment</h2>
+    <button onclick="runPhp()">Run Check</button>
+  </div>
+  <div id="phpResult"><span class="info">Click "Run Check" to start.</span></div>
+</div>
+
+<!-- ===== CHECK 2: cURL + SSL ===== -->
+<div class="card">
+  <div class="section-run">
+    <h2>2. cURL + SSL Connectivity</h2>
+    <button onclick="runCurl()">Run Check</button>
+  </div>
+  <div id="curlResult"><span class="info">Click "Run Check" to start.</span></div>
+</div>
+
+<!-- ===== CHECK 3: Jellyfin Reachability ===== -->
+<div class="card">
+  <div class="section-run">
+    <h2>3. Jellyfin Server Reachability</h2>
+    <button onclick="runJelly()">Run Check</button>
+  </div>
+  <div id="jellyResult"><span class="info">Click "Run Check" to start.</span></div>
+</div>
+
+<!-- ===== CHECK 4: Live Login Test ===== -->
+<div class="card">
+  <h2 style="margin-bottom:1rem">4. Live Login Test</h2>
+  <input type="text"     id="testUser" placeholder="Jellyfin username" />
+  <input type="password" id="testPass" placeholder="Jellyfin password" />
+  <button onclick="runLogin()">Test Login</button>
+  <div id="loginResult" style="margin-top:1rem"><span class="info">Enter credentials and click Test Login.</span></div>
+</div>
+
+<!-- ===== CHECK 5: Session ===== -->
+<div class="card">
+  <div class="section-run">
+    <h2>5. PHP Session</h2>
+    <button onclick="runSession()">Run Check</button>
+  </div>
+  <div id="sessionResult"><span class="info">Click "Run Check" to start.</span></div>
+</div>
+
+<!-- ===== CHECK 6: Raw API call ===== -->
+<div class="card">
+  <div class="section-run">
+    <h2>6. Raw Jellyfin API Response</h2>
+    <button onclick="runRaw()">Run Check</button>
+  </div>
+  <div id="rawResult"><span class="info">Click "Run Check" to start.</span></div>
+</div>
+
+<script>
+const BASE = '/cinflix/diag.php';
+
+function badge(txt, cls){ return `<span class="badge ${cls}">${txt}</span>`; }
+function row(label, val, cls=''){
+  return `<div class="row"><span class="label">${label}</span><span class="val ${cls}">${val}</span></div>`;
+}
+
+async function call(action, body=null){
+  const opts = { method: body ? 'POST' : 'GET' };
+  if(body){ opts.headers={'Content-Type':'application/json'}; opts.body=JSON.stringify(body); }
+  const res = await fetch(`${BASE}?action=${action}`, opts);
+  return res.json();
+}
+
+// ---- 1. PHP ----
+async function runPhp(){
+  const el = document.getElementById('phpResult');
+  el.innerHTML = '<span class="spin"></span> Checking...';
+  const d = await call('php');
+  el.innerHTML = [
+    row('PHP Version',    d.php_version,  d.php_ok ? 'ok':'err'),
+    row('cURL Loaded',    d.curl    ? badge('YES','ok') : badge('NO','err')),
+    row('JSON Loaded',    d.json    ? badge('YES','ok') : badge('NO','err')),
+    row('Sessions',       d.session ? badge('YES','ok') : badge('NO','err')),
+    row('OpenSSL',        d.openssl || 'N/A', 'info'),
+    row('display_errors', d.display_errors),
+    row('error_log path', d.error_log || 'not set', 'warn'),
+  ].join('');
+}
+
+// ---- 2. cURL ----
+async function runCurl(){
+  const el = document.getElementById('curlResult');
+  el.innerHTML = '<span class="spin"></span> Testing cURL to Jellyfin...';
+  const d = await call('curl');
+  let html = [
+    row('HTTP Code',    d.http_code, d.http_code>=200&&d.http_code<400 ? 'ok':'err'),
+    row('cURL Error',   d.curl_error || '(none)', d.curl_error ? 'err':'ok'),
+    row('SSL Verified', d.ssl_verified ? badge('YES','ok') : badge('Skipped','warn')),
+    row('Response Time',d.total_time + 's'),
+    row('Redirect URL', d.redirect_url || '(none)'),
+  ].join('');
+  if(d.response_body){
+    html += `<pre>${escHtml(d.response_body.substring(0,600))}</pre>`;
+  }
+  el.innerHTML = html;
+}
+
+// ---- 3. Jellyfin ----
+async function runJelly(){
+  const el = document.getElementById('jellyResult');
+  el.innerHTML = '<span class="spin"></span> Pinging Jellyfin /System/Info/Public...';
+  const d = await call('jellyfin');
+  let html = [
+    row('Reachable',       d.reachable ? badge('YES','ok') : badge('NO','err')),
+    row('HTTP Code',       d.http_code, d.http_code===200?'ok':'err'),
+    row('Server Name',     d.server_name || '—'),
+    row('Server Version',  d.server_version || '—'),
+    row('OS',              d.os || '—'),
+    row('cURL Error',      d.curl_error || '(none)', d.curl_error?'err':'ok'),
+  ].join('');
+  if(d.raw){ html += `<pre>${escHtml(d.raw.substring(0,800))}</pre>`; }
+  el.innerHTML = html;
+}
+
+// ---- 4. Login ----
+async function runLogin(){
+  const el   = document.getElementById('loginResult');
+  const user = document.getElementById('testUser').value.trim();
+  const pass = document.getElementById('testPass').value;
+  if(!user||!pass){ el.innerHTML='<span class="warn">Enter username and password first.</span>'; return; }
+  el.innerHTML = '<span class="spin"></span> Sending auth request to Jellyfin...';
+  const d = await call('login', {username:user, password:pass});
+  let cls  = d.success ? 'ok' : 'err';
+  let html = [
+    row('Result',         d.success ? badge('SUCCESS','ok') : badge('FAILED','err')),
+    row('HTTP Code',      d.http_code, d.http_code===200?'ok':'err'),
+    row('cURL Error',     d.curl_error || '(none)', d.curl_error?'err':'ok'),
+    row('Access Token',   d.token ? d.token.substring(0,20)+'…' : '(none)', d.token?'ok':'err'),
+    row('User ID',        d.user_id || '(none)', d.user_id?'ok':'err'),
+    row('Error Message',  d.error || '(none)', d.error?'err':'ok'),
+  ].join('');
+  if(d.raw_response){ html += `<details style="margin-top:.5rem"><summary style="cursor:pointer;color:#6b7280;font-size:.8rem">Raw JSON response</summary><pre>${escHtml(JSON.stringify(JSON.parse(d.raw_response||'{}'),null,2).substring(0,2000))}</pre></details>`; }
+  el.innerHTML = html;
+}
+
+// ---- 5. Session ----
+async function runSession(){
+  const el = document.getElementById('sessionResult');
+  el.innerHTML = '<span class="spin"></span> Checking...';
+  const d = await call('session');
+  el.innerHTML = [
+    row('session_start()', d.started ? badge('OK','ok') : badge('FAILED','err')),
+    row('Session Name',    d.name),
+    row('Save Path',       d.save_path || '(default)', d.save_path_writable?'ok':'warn'),
+    row('Path Writable',   d.save_path_writable ? badge('YES','ok') : badge('NO','err')),
+    row('Cookie HttpOnly', d.cookie_httponly ? badge('YES','ok') : badge('NO','warn')),
+    row('Logged In Now',   d.logged_in ? badge('YES','ok') : badge('NO','info')),
+  ].join('');
+}
+
+// ---- 6. Raw ----
+async function runRaw(){
+  const el = document.getElementById('rawResult');
+  el.innerHTML = '<span class="spin"></span> Calling /Users/AuthenticateByName with dummy data...';
+  const d = await call('raw');
+  let html = [
+    row('URL Called',  d.url, 'info'),
+    row('HTTP Code',   d.http_code, d.http_code<500?'warn':'err'),
+    row('cURL Error',  d.curl_error||'(none)', d.curl_error?'err':'ok'),
+    row('Auth Header', d.auth_header, 'info'),
+  ].join('');
+  html += `<pre>${escHtml((d.raw||'(empty)').substring(0,1500))}</pre>`;
+  el.innerHTML = html;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
