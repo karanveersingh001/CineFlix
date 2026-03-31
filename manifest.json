@@ -1,7 +1,7 @@
 {
-    "name": "Cinflix",
-    "short_name": "Cinflix",
-    "description": "Your personal OTT streaming platform powered by Jellyfin",
+    "name": "CineFlix",
+    "short_name": "CineFlix",
+    "description": "Your personal OTT streaming platform",
     "start_url": "/cinflix/?page=home",
     "display": "standalone",
     "background_color": "#03030a",
@@ -22,12 +22,11 @@
             "purpose": "any maskable"
         }
     ],
-    "screenshots": [],
     "shortcuts": [
         {
             "name": "Home",
             "url": "/cinflix/?page=home",
-            "description": "Go to Cinflix home"
+            "description": "Go to CineFlix home"
         },
         {
             "name": "Movies",
@@ -35,9 +34,9 @@
             "description": "Browse movies"
         },
         {
-            "name": "TV Shows",
+            "name": "Web Series",
             "url": "/cinflix/?page=shows",
-            "description": "Browse TV shows"
+            "description": "Browse web series"
         }
     ]
 }
