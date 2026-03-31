@@ -1,18 +1,18 @@
 <?php
 /**
- * Cinflix - Configuration File
- * Fixed for Hostinger shared hosting
+ * CineFlix - Configuration File
+ * Version: v1.1 – Rebranded to CineFlix
  */
 
 // ============================================================
 // JELLYFIN SERVER CONFIG
 // ============================================================
 define('JELLYFIN_URL',    'https://karan.ptgn.in:8920');
-define('APP_NAME',        'Cinflix');
-define('APP_VERSION',     '1.0.0');
-define('APP_CLIENT',      'Cinflix Web');
+define('APP_NAME',        'CineFlix');
+define('APP_VERSION',     '1.1.0');
+define('APP_CLIENT',      'CineFlix Web');
 define('APP_DEVICE',      'Web Browser');
-define('APP_DEVICE_ID',   'cinflix-web-001');  // Fixed ID - no user-agent dependency
+define('APP_DEVICE_ID',   'cineflix-web-001');
 
 define('SESSION_LIFETIME', 86400 * 30); // 30 days
 
@@ -32,16 +32,7 @@ function getAuthHeader(?string $token = null): string {
     return 'MediaBrowser ' . implode(', ', $parts);
 }
 
-// ============================================================
-// SESSION START
-// Key fixes for Hostinger shared hosting:
-//   1. No custom session_name() — breaks shared host session handler
-//   2. secure=false when not on HTTPS (Hostinger HTTP sub-path)
-//   3. ini_set() instead of session_set_cookie_params() for compatibility
-//   4. session_write_close() called after writes (in auth.php)
-// ============================================================
 if (session_status() === PHP_SESSION_NONE) {
-    // Detect real HTTPS (works behind Hostinger reverse proxy too)
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
@@ -57,9 +48,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ============================================================
-// HELPERS
-// ============================================================
 function jsonResponse(array $data, int $code = 200): void {
     http_response_code($code);
     header('Content-Type: application/json');
